@@ -3,7 +3,7 @@ const DisplayMedia = require("../models/DisplayMedia");
 const categoryOptions = {
   "About OSHRM": ["About OSHRM", "Why OSHRM"],
   "OSHRM People": ["Board", "Team"],
-  "OSHRM Projects": [],
+  "Success Stories": [],
   Partners: [],
   "Professional Certifications": [],
   Upcoming: ["Coming soon", "Rest of the year"],
