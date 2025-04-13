@@ -1,5 +1,14 @@
 const DisplayMedia = require("../models/DisplayMedia");
 
+const categoryOptions = {
+  "About OSHRM": ["About OSHRM", "Why OSHRM"],
+  "OSHRM People": ["Board", "Team"],
+  "OSHRM Projects": [],
+  Partners: [],
+  "Professional Certifications": [],
+  Upcoming: ["Coming soon", "Rest of the year"],
+};
+
 const socketHandler = (io) => {
   io.on("connection", async (socket) => {
     console.log(`🔵 New client attempted to connect: ${socket.id}`);
@@ -35,17 +44,39 @@ const socketHandler = (io) => {
     // ✅ When controller selects a category/subcategory
     socket.on("selectCategory", async ({ category, subcategory }) => {
       console.log(`📂 Category selected: ${category} > ${subcategory}`);
-
-      const media = await DisplayMedia.findOne({ category, subcategory });
-
-      if (media) {
-        io.emit("displayMedia", media); // 👉 send to big screens
+    
+      const hasSubcategories = categoryOptions[category]?.length > 0;
+    
+      // Show animation if:
+      // 1. Category has subcategories AND subcategory is selected
+      // OR
+      // 2. Category has NO subcategories
+      const shouldShowLoading = (hasSubcategories && subcategory) || !hasSubcategories;
+    
+      if (shouldShowLoading) {
+        console.log("🚀 Backend is emitting 'categorySelected'");
+        io.emit("categorySelected");
       } else {
-        console.log("⚠️ No media found for this category.");
-        io.emit("displayMedia", null); // Clear if nothing found
+        console.log("⚠️ Backend NOT emitting 'categorySelected'");
       }
+    
+      setTimeout(async () => {
+        try {
+          const media = await DisplayMedia.findOne({ category, subcategory });
+    
+          if (media) {
+            io.emit("displayMedia", media);
+          } else {
+            console.log("⚠️ No media found for this category.");
+            io.emit("displayMedia", null);
+          }
+        } catch (err) {
+          console.error("❌ Error fetching media:", err);
+          io.emit("displayMedia", null);
+        }
+      }, shouldShowLoading ? 1000 : 0); // only delay if loading shown
     });
-
+    
     socket.on("disconnect", (reason) => {
       console.log(`❌ Client disconnected: ${socket.id} - Reason: ${reason}`);
     });
