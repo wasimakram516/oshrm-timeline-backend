@@ -1,12 +1,12 @@
 const DisplayMedia = require("../models/DisplayMedia");
 
 const categoryOptions = {
-  "About OSHRM": ["About OSHRM", "Why OSHRM"],
+  "About OSHRM": ["About OSHRM", "Why OSHRM", "OSHRM Arms"],
   "OSHRM People": ["Board", "Team"],
-  "Success Stories": [],
-  Partners: [],
+  "Success Stories": ["Success Stories", "Conferences"],
+  Partners: ["2025 Sponsors", "Partners"],
   "Professional Certifications": [],
-  Upcoming: ["Coming soon", "Rest of the year"],
+  Upcoming: ["Coming soon", "2025 Calendar"],
 };
 
 const socketHandler = (io) => {
@@ -44,39 +44,43 @@ const socketHandler = (io) => {
     // ✅ When controller selects a category/subcategory
     socket.on("selectCategory", async ({ category, subcategory }) => {
       console.log(`📂 Category selected: ${category} > ${subcategory}`);
-    
+
       const hasSubcategories = categoryOptions[category]?.length > 0;
-    
+
       // Show animation if:
       // 1. Category has subcategories AND subcategory is selected
       // OR
       // 2. Category has NO subcategories
-      const shouldShowLoading = (hasSubcategories && subcategory) || !hasSubcategories;
-    
+      const shouldShowLoading =
+        (hasSubcategories && subcategory) || !hasSubcategories;
+
       if (shouldShowLoading) {
         console.log("🚀 Backend is emitting 'categorySelected'");
         io.emit("categorySelected");
       } else {
         console.log("⚠️ Backend NOT emitting 'categorySelected'");
       }
-    
-      setTimeout(async () => {
-        try {
-          const media = await DisplayMedia.findOne({ category, subcategory });
-    
-          if (media) {
-            io.emit("displayMedia", media);
-          } else {
-            console.log("⚠️ No media found for this category.");
+
+      setTimeout(
+        async () => {
+          try {
+            const media = await DisplayMedia.findOne({ category, subcategory });
+
+            if (media) {
+              io.emit("displayMedia", media);
+            } else {
+              console.log("⚠️ No media found for this category.");
+              io.emit("displayMedia", null);
+            }
+          } catch (err) {
+            console.error("❌ Error fetching media:", err);
             io.emit("displayMedia", null);
           }
-        } catch (err) {
-          console.error("❌ Error fetching media:", err);
-          io.emit("displayMedia", null);
-        }
-      }, shouldShowLoading ? 1000 : 0); // only delay if loading shown
+        },
+        shouldShowLoading ? 1000 : 0
+      ); // only delay if loading shown
     });
-    
+
     socket.on("disconnect", (reason) => {
       console.log(`❌ Client disconnected: ${socket.id} - Reason: ${reason}`);
     });
