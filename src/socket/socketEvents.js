@@ -45,14 +45,10 @@ const socketHandler = (io) => {
     socket.on("selectCategory", async ({ category, subcategory }) => {
       console.log(`📂 Category selected: ${category} > ${subcategory}`);
 
+      // 1) Check if category has subcategories
       const hasSubcategories = categoryOptions[category]?.length > 0;
 
-      // Show animation if:
-      // 1. Category has subcategories AND subcategory is selected
-      // OR
-      // 2. Category has NO subcategories
-      const shouldShowLoading =
-        (hasSubcategories && subcategory) || !hasSubcategories;
+      const shouldShowLoading = hasSubcategories ? !!subcategory : true;
 
       if (shouldShowLoading) {
         console.log("🚀 Backend is emitting 'categorySelected'");
@@ -61,24 +57,21 @@ const socketHandler = (io) => {
         console.log("⚠️ Backend NOT emitting 'categorySelected'");
       }
 
-      setTimeout(
-        async () => {
-          try {
-            const media = await DisplayMedia.findOne({ category, subcategory });
-
-            if (media) {
-              io.emit("displayMedia", media);
-            } else {
-              console.log("⚠️ No media found for this category.");
-              io.emit("displayMedia", null);
-            }
-          } catch (err) {
-            console.error("❌ Error fetching media:", err);
+      // Delay the media display by 1s if we're showing loading
+      setTimeout(async () => {
+        try {
+          const media = await DisplayMedia.findOne({ category, subcategory });
+          if (media) {
+            io.emit("displayMedia", media);
+          } else {
+            console.log("⚠️ No media found for this category.");
             io.emit("displayMedia", null);
           }
-        },
-        shouldShowLoading ? 1000 : 0
-      ); // only delay if loading shown
+        } catch (err) {
+          console.error("❌ Error fetching media:", err);
+          io.emit("displayMedia", null);
+        }
+      }, shouldShowLoading ? 1000 : 0);
     });
 
     socket.on("disconnect", (reason) => {
